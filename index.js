@@ -26,7 +26,7 @@ module.exports = co['default'] = co.co = co;
 co.wrap = function (fn) {
   createPromise.__generatorFunction__ = fn;
   return createPromise;
-  function createPromise() {
+  function createPromise () {
     return co.call(this, fn.apply(this, arguments));
   }
 };
@@ -40,17 +40,19 @@ co.wrap = function (fn) {
  * @api public
  */
 
-function co(gen) {
+function co (gen) {
   var ctx = this;
   var args = slice.call(arguments, 1);
 
   // we wrap everything in a promise to avoid promise chaining,
   // which leads to memory leak errors.
   // see https://github.com/tj/co/issues/180
-  return new Promise(function(resolve, reject) {
+  return new Promise(function (resolve, reject) {
+    //  如果是generatorFunction函数的话，就初始化generator函数
     if (typeof gen === 'function') gen = gen.apply(ctx, args);
+    //  如果不是函数 直接返回
     if (!gen || typeof gen.next !== 'function') return resolve(gen);
-
+    //  初始化入口函数
     onFulfilled();
 
     /**
@@ -59,13 +61,16 @@ function co(gen) {
      * @api private
      */
 
-    function onFulfilled(res) {
+    function onFulfilled (res) {
       var ret;
       try {
+        //  拿到第一个yield返回的对象值保存到ret参数中
         ret = gen.next(res);
       } catch (e) {
+        //  如果异常的话,则直接调用reject把promise设置为失败状态
         return reject(e);
       }
+      //  然后继续把generator的指针指向下一个状态
       next(ret);
       return null;
     }
@@ -76,13 +81,15 @@ function co(gen) {
      * @api private
      */
 
-    function onRejected(err) {
+    function onRejected (err) {
       var ret;
       try {
+        //  抛出错误，使用generator对象throw. 在try catch里面可以捕获到该异常
         ret = gen.throw(err);
       } catch (e) {
         return reject(e);
       }
+      //  继续把generator的指针指向下一个状态
       next(ret);
     }
 
@@ -95,10 +102,17 @@ function co(gen) {
      * @api private
      */
 
-    function next(ret) {
+    function next (ret) {
+      //  如果generator函数执行完成后，该done会为true，因此直接调用resolve把promise设置为成功状态
       if (ret.done) return resolve(ret.value);
+      //  把yield返回的值转换成promise
       var value = toPromise.call(ctx, ret.value);
+      /**
+       * 如果有返回值的话，且该返回值是一个promise对象的话，如果成功的话就会执行onFulfilled回调函数
+       * 如果失败的话，就会调用 onRejected 回调函数
+       */
       if (value && isPromise(value)) return value.then(onFulfilled, onRejected);
+      //  否则的话，说明有异常，就调用 onRejected 函数给出错误提示
       return onRejected(new TypeError('You may only yield a function, promise, generator, array, or object, '
         + 'but the following object was passed: "' + String(ret.value) + '"'));
     }
@@ -113,7 +127,7 @@ function co(gen) {
  * @api private
  */
 
-function toPromise(obj) {
+function toPromise (obj) {
   if (!obj) return obj;
   if (isPromise(obj)) return obj;
   if (isGeneratorFunction(obj) || isGenerator(obj)) return co.call(this, obj);
@@ -131,7 +145,7 @@ function toPromise(obj) {
  * @api private
  */
 
-function thunkToPromise(fn) {
+function thunkToPromise (fn) {
   var ctx = this;
   return new Promise(function (resolve, reject) {
     fn.call(ctx, function (err, res) {
@@ -151,7 +165,7 @@ function thunkToPromise(fn) {
  * @api private
  */
 
-function arrayToPromise(obj) {
+function arrayToPromise (obj) {
   return Promise.all(obj.map(toPromise, this));
 }
 
@@ -164,7 +178,7 @@ function arrayToPromise(obj) {
  * @api private
  */
 
-function objectToPromise(obj){
+function objectToPromise (obj) {
   var results = new obj.constructor();
   var keys = Object.keys(obj);
   var promises = [];
@@ -178,7 +192,7 @@ function objectToPromise(obj){
     return results;
   });
 
-  function defer(promise, key) {
+  function defer (promise, key) {
     // predefine the key in the result
     results[key] = undefined;
     promises.push(promise.then(function (res) {
@@ -195,7 +209,7 @@ function objectToPromise(obj){
  * @api private
  */
 
-function isPromise(obj) {
+function isPromise (obj) {
   return 'function' == typeof obj.then;
 }
 
@@ -207,7 +221,7 @@ function isPromise(obj) {
  * @api private
  */
 
-function isGenerator(obj) {
+function isGenerator (obj) {
   return 'function' == typeof obj.next && 'function' == typeof obj.throw;
 }
 
@@ -218,8 +232,8 @@ function isGenerator(obj) {
  * @return {Boolean}
  * @api private
  */
- 
-function isGeneratorFunction(obj) {
+
+function isGeneratorFunction (obj) {
   var constructor = obj.constructor;
   if (!constructor) return false;
   if ('GeneratorFunction' === constructor.name || 'GeneratorFunction' === constructor.displayName) return true;
@@ -234,6 +248,6 @@ function isGeneratorFunction(obj) {
  * @api private
  */
 
-function isObject(val) {
+function isObject (val) {
   return Object == val.constructor;
 }
