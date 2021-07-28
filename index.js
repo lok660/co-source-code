@@ -3,12 +3,14 @@
  * slice() reference.
  */
 
+//  保存slice方法，后面多次用到
 var slice = Array.prototype.slice;
 
 /**
  * Expose `co`.
  */
 
+// 导出co
 module.exports = co['default'] = co.co = co;
 
 /**
@@ -23,6 +25,7 @@ module.exports = co['default'] = co.co = co;
  * @api public
  */
 
+// 调用将 generator 方法包装为promise
 co.wrap = function (fn) {
   createPromise.__generatorFunction__ = fn;
   return createPromise;
@@ -40,8 +43,14 @@ co.wrap = function (fn) {
  * @api public
  */
 
+/**
+ * 执行generator,返回一个promise对象
+ * 首次调用即将整个fn包在主promise中
+ */
 function co (gen) {
+  // 当前执行环境上下文
   var ctx = this;
+  // 获取参数
   var args = slice.call(arguments, 1);
 
   // we wrap everything in a promise to avoid promise chaining,
@@ -50,7 +59,7 @@ function co (gen) {
   return new Promise(function (resolve, reject) {
     //  如果是generatorFunction函数的话，就初始化generator函数
     if (typeof gen === 'function') gen = gen.apply(ctx, args);
-    //  如果不是函数 直接返回
+    //  如果gen不存在,或者gen不是generator函数，则直接resovle将该值返回
     if (!gen || typeof gen.next !== 'function') return resolve(gen);
     //  初始化入口函数
     onFulfilled();
@@ -233,6 +242,13 @@ function isGenerator (obj) {
  * @api private
  */
 
+/**
+ * 判断是否为generator函数
+ * 利用constructor === Object
+ * var a = {}
+ * a.constructor === Object
+ * a.constructor.name //  "Object"
+ */
 function isGeneratorFunction (obj) {
   var constructor = obj.constructor;
   if (!constructor) return false;
@@ -248,6 +264,11 @@ function isGeneratorFunction (obj) {
  * @api private
  */
 
+/**
+ * 判断是否为干净对象
+ * 利用constructor属性
+ * Object.constructor === Object
+ */
 function isObject (val) {
   return Object == val.constructor;
 }
