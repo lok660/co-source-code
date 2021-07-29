@@ -1,3 +1,17 @@
+/**
+ * generator函数的自动执行器,会返回一个promise,使用如下
+ * co(gen).then(function (){
+ *    console.log('函数执行完成')
+ * })
+ * 
+ * 原理:
+ * 接受generator函数作为参数,返回一个promise对象
+ * 然后将next()方法包装为一个新的promise,依次执行
+ * onFulfilled方法获取当前generator执行状态的next执行结果
+ * next方法对执行状态及next属性加以判断处理
+ *    状态为done则执行resolve,如果为主promise,则resolve最外层的回调,否则onFulfilled
+ *    未完成  执行co新建的子promise并将onFulfilled作为回调传入,执行完成,会回到主promise
+ */
 
 /**
  * slice() reference.
@@ -98,7 +112,7 @@ function co (gen) {
       } catch (e) {
         return reject(e);
       }
-      //  继续把generator的指针指向下一个状态
+      //  调用实现自动执行的关键函数next,继续把generator的指针指向下一个状态
       next(ret);
     }
 
@@ -111,6 +125,10 @@ function co (gen) {
      * @api private
      */
 
+    /**
+     * next函数的实现
+     * 如果为done,则value传入resolve并执行,否则调用co生成子promise,继续执行
+     */
     function next (ret) {
       //  如果generator函数执行完成后，该done会为true，因此直接调用resolve把promise设置为成功状态
       if (ret.done) return resolve(ret.value);
