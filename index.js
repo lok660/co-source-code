@@ -147,10 +147,15 @@ function co (gen) {
  */
 function toPromise (obj) {
   if (!obj) return obj;
+  //  如果是promise,则直接返回
   if (isPromise(obj)) return obj;
+  //  主要看这里,能转化为generator函数的最终都要再次调用co函数,生成子promise,这样就完成了循环调用
   if (isGeneratorFunction(obj) || isGenerator(obj)) return co.call(this, obj);
+  //  如果为函数,则调用thunkToPromise转成promise
   if ('function' == typeof obj) return thunkToPromise.call(this, obj);
+  //  如果为数组,则调用arrayToPromise转成promise
   if (Array.isArray(obj)) return arrayToPromise.call(this, obj);
+  //  如果为对象,则调用objectToPromise转成promise
   if (isObject(obj)) return objectToPromise.call(this, obj);
   return obj;
 }
