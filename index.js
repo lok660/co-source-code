@@ -136,6 +136,15 @@ function co (gen) {
  * @api private
  */
 
+/**
+ * 将obj转换成promise
+ * obj无非为以下几种类型
+ * 1.非object的基本数据类型 ==> 直接返回
+ * 2.promise ==> 直接返回
+ * 3.generator对象和方法  ==> co调用
+ * 4.thunk函数  ==> thunkToPromise
+ * 5.Object ==> ObjectToPromise
+ */
 function toPromise (obj) {
   if (!obj) return obj;
   if (isPromise(obj)) return obj;
@@ -154,11 +163,16 @@ function toPromise (obj) {
  * @api private
  */
 
+/**
+ * thunk函数转成promise
+ */
 function thunkToPromise (fn) {
   var ctx = this;
   return new Promise(function (resolve, reject) {
+    //  执行执行fn,回调函数中控制状态
     fn.call(ctx, function (err, res) {
       if (err) return reject(err);
+      //  多余的参数作为res返回 resolve函数中
       if (arguments.length > 2) res = slice.call(arguments, 1);
       resolve(res);
     });
@@ -174,6 +188,10 @@ function thunkToPromise (fn) {
  * @api private
  */
 
+/**
+ * map遍历array,把所有的item都转换为promise
+ * 数组转换直接使用promise.all获取所有item resolve之后值的实例
+ */
 function arrayToPromise (obj) {
   return Promise.all(obj.map(toPromise, this));
 }
@@ -187,20 +205,34 @@ function arrayToPromise (obj) {
  * @api private
  */
 
+/**
+ * 对象转换为promise
+ * 对象属性可能是多种类型,所以利用Object.keys()对其属性进行遍历,转换为promise
+ * 并push到数组汇总,然后将该数组转换为promise
+ */
 function objectToPromise (obj) {
   var results = new obj.constructor();
+  //  获取属性数组,并根据其进行遍历
   var keys = Object.keys(obj);
+  //  保存所有promise的数组
   var promises = [];
   for (var i = 0; i < keys.length; i++) {
+    //  单个对象value
     var key = keys[i];
+    //  转换为promise
     var promise = toPromise.call(this, obj[key]);
+    //  转换指挥,push到promise数组
     if (promise && isPromise(promise)) defer(promise, key);
+    //  非promise属性,直接赋值给results
     else results[key] = obj[key];
   }
   return Promise.all(promises).then(function () {
     return results;
   });
-
+  /**
+   * 给promise实例增加resolve方法并push到数组中
+   * resolve方法就是给results对应的key赋值
+   */
   function defer (promise, key) {
     // predefine the key in the result
     results[key] = undefined;
@@ -218,6 +250,10 @@ function objectToPromise (obj) {
  * @api private
  */
 
+/**
+ * 判断是否为promise
+ * 利用promise.then存在且为function
+ */
 function isPromise (obj) {
   return 'function' == typeof obj.then;
 }
@@ -230,6 +266,10 @@ function isPromise (obj) {
  * @api private
  */
 
+/**
+ * 判断是否为generator
+ * 利用generator的next和throw两属性均为function
+ */
 function isGenerator (obj) {
   return 'function' == typeof obj.next && 'function' == typeof obj.throw;
 }
