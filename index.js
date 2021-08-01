@@ -139,7 +139,7 @@ function co (gen) {
        * 如果失败的话，就会调用 onRejected 回调函数
        */
       if (value && isPromise(value)) return value.then(onFulfilled, onRejected);
-      //  否则的话，说明有异常，就调用 onRejected 函数给出错误提示
+      //  否则的话，说明有异常，即调用 onRejected 函数给出错误提示
       return onRejected(new TypeError('You may only yield a function, promise, generator, array, or object, '
         + 'but the following object was passed: "' + String(ret.value) + '"'));
     }
